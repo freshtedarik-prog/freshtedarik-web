@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths:
       - "tools/**"
-      - "assets/config.js"
+      - "assets/**"
+      - "admin.html"
   schedule:
     - cron: "15 3 * * *"   # her gece 06:15 (TR): panelde değişen ürünler statik sayfalara işlenir
   workflow_dispatch:
