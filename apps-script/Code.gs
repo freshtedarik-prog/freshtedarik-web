@@ -77,6 +77,11 @@ function doPost(e) {
       case 'settingsSave': return json_(settingsSave_(d.settings || {}));
       case 'upload': return json_(upload_(d));
       case 'passwordChange': return json_(passwordChange_(d.current, d.next));
+      case 'blogList': return json_(blogList_());
+      case 'blogSave': return json_(blogSave_(d.post || {}));
+      case 'blogDelete': return json_(blogDelete_(d.slug, d.sha));
+      case 'githubStatus': return json_(githubStatus_());
+      case 'githubSave': return json_(githubSave_(d.githubToken));
       case 'logout': CacheService.getScriptCache().remove('tok_' + d.token); return json_({ ok: true });
       default: return json_({ ok: false, error: 'Bilinmeyen işlem: ' + a });
     }
@@ -480,4 +485,135 @@ function simplifySource_(s) {
   if (m) return decodeURIComponent(m[1]);
   const h = s.match(/ref=https?:\/\/([^/]+)/);
   return h ? h[1].replace(/^www\./, '') : 'Diğer';
+}
+
+
+/* ---------------- Blog (GitHub üzerinden yayın) ---------------- */
+
+const GH = { owner: 'freshtedarik-prog', repo: 'freshtedarik-web', dir: 'tools/blog', branch: 'main' };
+const POST_KEYS = ['title', 'seo_title', 'description', 'image', 'image_alt', 'category', 'date', 'status', 'read'];
+
+function ghRequest_(method, path, payload) {
+  const t = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!t) throw new Error('Blog yayın bağlantısı kurulmamış. Hesap ve Güvenlik sayfasından GitHub anahtarını girin.');
+  return {
+    url: 'https://api.github.com/repos/' + GH.owner + '/' + GH.repo + path,
+    method: method,
+    headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+    contentType: 'application/json',
+    payload: payload ? JSON.stringify(payload) : undefined,
+    muteHttpExceptions: true
+  };
+}
+
+function ghParse_(res) {
+  const code = res.getResponseCode();
+  const body = res.getContentText();
+  if (code === 401) throw new Error('GitHub anahtarı geçersiz veya süresi dolmuş. Hesap ve Güvenlik sayfasından yenileyin.');
+  if (code === 403) throw new Error('GitHub anahtarının bu depoya yazma izni yok.');
+  if (code === 404) return null;
+  if (code >= 300) throw new Error('GitHub hatası (' + code + ').');
+  return body ? JSON.parse(body) : {};
+}
+
+function gh_(method, path, payload) {
+  const r = ghRequest_(method, path, payload);
+  const url = r.url; delete r.url;
+  return ghParse_(UrlFetchApp.fetch(url, r));
+}
+
+function b64decode_(c) { return Utilities.newBlob(Utilities.base64Decode(String(c).replace(/\n/g, ''))).getDataAsString('UTF-8'); }
+
+function parsePost_(text, slug, sha) {
+  const i = text.indexOf('\n---\n');
+  const head = i > -1 ? text.slice(0, i) : '';
+  const body = i > -1 ? text.slice(i + 5) : text;
+  const p = { slug: slug, sha: sha, body: body };
+  head.split('\n').forEach(l => { const k = l.indexOf(': '); if (k > 0) p[l.slice(0, k).trim()] = l.slice(k + 2).trim(); });
+  p.status = p.status || 'published';
+  return p;
+}
+
+function blogList_() {
+  const list = gh_('get', '/contents/' + GH.dir + '?ref=' + GH.branch);
+  const files = (list || []).filter(f => /\.md$/.test(f.name));
+  const reqs = files.map(f => ghRequest_('get', '/contents/' + GH.dir + '/' + encodeURIComponent(f.name) + '?ref=' + GH.branch));
+  const res = reqs.length ? UrlFetchApp.fetchAll(reqs) : [];
+  const posts = res.map((r, i) => {
+    const j = ghParse_(r);
+    return parsePost_(b64decode_(j.content), files[i].name.replace(/\.md$/, ''), j.sha);
+  });
+  posts.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return { ok: true, posts: posts };
+}
+
+function blogSave_(p) {
+  const clean = v => String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
+  if (!clean(p.title)) return { ok: false, error: 'Başlık zorunlu.' };
+  if (!String(p.body || '').trim()) return { ok: false, error: 'Yazı metni boş olamaz.' };
+  let slug = p.slug ? String(p.slug) : slug_(p.title).slice(0, 80);
+  if (!slug) return { ok: false, error: 'Başlıktan adres üretilemedi.' };
+  let sha = p.sha || null;
+  if (!p.slug) {
+    let n = 1, base = slug;
+    while (gh_('get', '/contents/' + GH.dir + '/' + slug + '.md?ref=' + GH.branch)) { n++; slug = base + '-' + n; }
+  }
+  const meta = {
+    title: clean(p.title), seo_title: clean(p.seo_title) || clean(p.title), description: clean(p.description).slice(0, 300),
+    image: clean(p.image), image_alt: clean(p.image_alt) || clean(p.title), category: clean(p.category) || 'Mutfak Rehberi',
+    date: clean(p.date) || Utilities.formatDate(new Date(), 'Europe/Istanbul', 'yyyy-MM-dd'),
+    status: p.status === 'draft' ? 'draft' : 'published'
+  };
+  const words = String(p.body).split(/\s+/).length;
+  meta.read = String(Math.max(2, Math.round(words / 200)));
+  const text = POST_KEYS.filter(k => meta[k]).map(k => k + ': ' + meta[k]).join('\n') + '\n---\n' + String(p.body).replace(/\r\n/g, '\n').trim() + '\n';
+  const payload = {
+    message: (sha ? 'Blog güncellendi: ' : 'Yeni blog yazısı: ') + meta.title,
+    content: Utilities.base64Encode(text, Utilities.Charset.UTF_8),
+    branch: GH.branch,
+    committer: { name: 'Fresh Tedarik Panel', email: 'freshtedarik@gmail.com' }
+  };
+  if (sha) payload.sha = sha;
+  const res = gh_('put', '/contents/' + GH.dir + '/' + slug + '.md', payload);
+  return { ok: true, slug: slug, sha: res && res.content ? res.content.sha : null, status: meta.status };
+}
+
+function blogDelete_(slug, sha) {
+  if (!slug || !sha) return { ok: false, error: 'Yazı bulunamadı.' };
+  gh_('delete', '/contents/' + GH.dir + '/' + slug + '.md', {
+    message: 'Blog yazısı silindi: ' + slug, sha: sha, branch: GH.branch,
+    committer: { name: 'Fresh Tedarik Panel', email: 'freshtedarik@gmail.com' }
+  });
+  return { ok: true };
+}
+
+function githubSave_(token) {
+  token = String(token || '').trim();
+  if (!token) return { ok: false, error: 'Anahtarı yapıştırın.' };
+  const res = UrlFetchApp.fetch('https://api.github.com/repos/' + GH.owner + '/' + GH.repo, {
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }, muteHttpExceptions: true
+  });
+  if (res.getResponseCode() !== 200) return { ok: false, error: 'Bu anahtarla depoya ulaşılamadı. Anahtarın freshtedarik-web deposuna erişimi olduğundan emin olun.' };
+  const perms = JSON.parse(res.getContentText()).permissions || {};
+  if (!perms.push) return { ok: false, error: 'Anahtarın yazma izni yok. "Contents: Read and write" izniyle yeniden oluşturun.' };
+  PropertiesService.getScriptProperties().setProperty('GITHUB_TOKEN', token);
+  return { ok: true };
+}
+
+function githubStatus_() {
+  const t = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!t) return { ok: true, connected: false };
+  try {
+    const runs = gh_('get', '/actions/runs?per_page=1');
+    const r = runs && runs.workflow_runs && runs.workflow_runs[0];
+    return { ok: true, connected: true, lastRun: r ? { status: r.status, conclusion: r.conclusion, name: r.name, at: r.updated_at } : null };
+  } catch (err) {
+    return { ok: true, connected: false, error: String(err.message || err) };
+  }
+}
+
+/** Yeni izinleri (dış bağlantı) onaylatmak için editörden bir kez çalıştırın. Şifreyi değiştirmez. */
+function izinleriOnayla() {
+  UrlFetchApp.fetch('https://api.github.com/zen', { muteHttpExceptions: true });
+  Logger.log('İzinler tamam.');
 }

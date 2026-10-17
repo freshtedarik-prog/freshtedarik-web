@@ -78,6 +78,7 @@
     ["ozet", "Özet"], ["talepler", "Teklif Talepleri"], ["urunler", "Ürünler"], ["icerik", "Site İçeriği"],
     ["iletisim", "İletişim Bilgileri"], ["google", "Google"], ["instagram", "Instagram"], ["genel", "Genel Ayarlar"], ["hesap", "Hesap ve Güvenlik"]
   ];
+  var ROUTES = {};
   function icon(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + IC[k] + "</svg>"; }
   function renderNav() {
     var newCount = state.dash ? state.dash.totals.leadsNew : 0;
@@ -93,8 +94,7 @@
   });
   function go(page) {
     state.page = page; renderNav(); window.scrollTo(0, 0);
-    var r = { ozet: pageDash, talepler: pageLeads, urunler: pageProducts, hesap: pageAccount, google: pageGoogle, instagram: pageInstagram };
-    (r[page] || function () { pageSettings(page); })();
+    (ROUTES[page] || function () { pageSettings(page); })();
   }
 
   function start(page) {
@@ -476,7 +476,9 @@
         '<a class="btn btn-line" href="' + SHEET_URL + '" target="_blank" rel="noopener">Google Tablosu (ürünler, talepler, ayarlar)</a>' +
         '<a class="btn btn-line" href="https://github.com/freshtedarik-prog/freshtedarik-web" target="_blank" rel="noopener">GitHub deposu</a>' +
         '<a class="btn btn-line" href="https://script.google.com/home" target="_blank" rel="noopener">Apps Script projeleri</a>' +
-        '<p class="small muted">Panel, freshtedarik@gmail.com hesabındaki tabloya ve Drive\'daki "Fresh Tedarik Site Görselleri" klasörüne kaydeder.</p></div></div>';
+        '<p class="small muted">Panel, freshtedarik@gmail.com hesabındaki tabloya ve Drive\'daki "Fresh Tedarik Site Görselleri" klasörüne kaydeder.</p></div></div>' +
+      '<div class="card" id="accSlot" style="margin-top:16px"></div>';
+    accountHooks.forEach(function (fn) { fn($("#accSlot")); });
     $("#pwSave").onclick = function () {
       var btn = this, a = $("#pwCur").value, b = $("#pwNew").value, c = $("#pwNew2").value;
       if (b !== c) { toast("Yeni şifreler aynı değil.", true); return; }
@@ -488,7 +490,22 @@
     };
   }
 
+  /* ---------- Eklentiler için ortak yardımcılar ---------- */
+  var accountHooks = [];
+  ROUTES.ozet = pageDash; ROUTES.talepler = pageLeads; ROUTES.urunler = pageProducts; ROUTES.hesap = pageAccount; ROUTES.google = pageGoogle; ROUTES.instagram = pageInstagram;
+  window.FT_ADMIN = {
+    $: $, esc: esc, api: api, toast: toast, loading: loading, failed: failed, mustChangeNotice: mustChangeNotice,
+    imgUrl: imgUrl, imagePicker: imagePicker, bindImagePicker: bindImagePicker,
+    register: function (key, label, iconPath, fn, after) {
+      IC[key] = iconPath; ROUTES[key] = fn;
+      var i = PAGES.findIndex(function (p) { return p[0] === after; });
+      PAGES.splice(i > -1 ? i + 1 : PAGES.length, 0, [key, label]);
+      if (!$("#appView").hidden) renderNav();
+    },
+    onAccount: function (fn) { accountHooks.push(fn); }
+  };
+
   /* ---------- Açılış ---------- */
   var saved = read(TOKEN_KEY);
-  if (saved) { state.token = saved; start("ozet"); }
+  if (saved) { state.token = saved; setTimeout(function () { start("ozet"); }, 0); }
 })();
