@@ -13,3 +13,7 @@ freshtedarik.com — İstanbul'daki kafe ve restoranlara sebze, meyve, kuru gıd
 "Fresh Tedarik Web" Google tablosundaki **Ürünler** sekmesine satır ekleyin. `Yayında = Evet` olan ürünler sitede görünür.
 `Görsel URL` alanına tam görsel adresi ya da Pexels fotoğraf numarası yazılabilir.
 Tablonun sitede okunabilmesi için paylaşım ayarı "Bağlantıya sahip olan herkes: Görüntüleyici" olmalıdır.
+
+## Statik sayfalar (SEO)
+`python3 tools/build.py` komutu ürün kartlarını index.html'e gömer, kategori/hizmet bölgesi sayfalarını,
+eski Wix adres yönlendirmelerini ve sitemap.xml'i yeniden üretir. Ürün listesi değişince çalıştırın.

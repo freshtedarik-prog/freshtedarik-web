@@ -394,3 +394,36 @@ footer a:hover { color: #fff; }
 footer .credit { margin-top: 22px; padding-top: 16px; border-top: 1px solid #ffffff14; justify-content: center; font-size: .8rem; color: #8FA597; }
 footer .credit a { color: #C9D9CE; }
 footer .credit a:hover { color: #fff; }
+
+/* SSS */
+.faq-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: clamp(24px, 5vw, 64px); align-items: start; }
+.faq-head { display: grid; gap: 14px; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; list-style: none; padding: 18px 36px 18px 0; font-weight: 650; font-size: 1.05rem; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; position: absolute; right: 4px; top: 50%; translate: 0 -50%; font-size: 1.5rem; font-weight: 400; color: var(--green); }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { padding: 0 0 18px; color: var(--ink-soft); max-width: 60ch; }
+.faq a, .prose a { color: var(--green); font-weight: 600; }
+@media (max-width: 860px) { .faq-grid { grid-template-columns: 1fr; } }
+a.cat { display: block; }
+
+/* Açılış sayfaları */
+.page-hero { padding-block: clamp(24px, 4vw, 48px) clamp(32px, 5vw, 64px); }
+.page-hero .hero-photo img { aspect-ratio: 4 / 3; }
+.breadcrumb { display: flex; flex-wrap: wrap; gap: 8px; font-size: .88rem; color: var(--ink-soft); }
+.breadcrumb a { color: var(--green); font-weight: 600; text-decoration: none; }
+.prose { max-width: 760px; display: grid; gap: 16px; }
+.prose h2 { font-size: clamp(1.8rem, 3.4vw, 2.5rem); margin-top: 8px; }
+.prose p { color: var(--ink-soft); font-size: 1.05rem; }
+.sub-cat + .sub-cat { margin-top: 48px; }
+.sub-cat h2 { margin-bottom: 20px; }
+.district-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: clamp(24px, 5vw, 64px); }
+.district-grid h2 { margin-bottom: 16px; }
+.district-list { list-style: none; margin: 0; padding: 0; columns: 3 140px; column-gap: 24px; }
+.district-list li { padding: 7px 0; border-bottom: 1px solid var(--line); break-inside: avoid; font-weight: 500; }
+@media (max-width: 760px) { .district-grid { grid-template-columns: 1fr; } }
+.band-cta { grid-template-columns: 1.4fr auto; }
+.btn-on-dark { background: var(--lemon); color: var(--ink); }
+.btn-on-dark:hover { background: #fff; }
+@media (max-width: 860px) { .band-cta { grid-template-columns: 1fr; } }
