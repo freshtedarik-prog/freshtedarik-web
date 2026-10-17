@@ -377,3 +377,8 @@ footer a:hover { color: #fff; }
   html { scroll-behavior: auto; }
   * { transition: none !important; animation: none !important; }
 }
+
+/* Logo */
+.brand-logo { height: 40px; width: auto; }
+.footer-logo { height: 34px; width: auto; }
+@media (max-width: 520px) { .brand-logo { height: 32px; } }
