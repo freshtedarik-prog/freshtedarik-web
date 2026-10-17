@@ -260,7 +260,6 @@
       items: itemsText(),
       extra: $("#extraItems").value.trim(),
       pain: f.pain.value.trim(),
-      trial: f.trial.checked ? "Evet" : "Hayır",
       source: utm()
     };
 
@@ -282,7 +281,7 @@
         "Teslimat: " + (data.days || "-") + " · " + data.slot + "\n" +
         (data.items ? "\nÜrünler:\n" + data.items + "\n" : "") +
         (data.extra ? "\nDiğer: " + data.extra + "\n" : "") +
-        "Deneme teslimatı: " + data.trial;
+        "Ödeme: " + data.payment;
       $("#waAfter").href = waLink(waMsg);
       $("#refNo").textContent = data.ref;
       $("#successPhone").textContent = data.phone;

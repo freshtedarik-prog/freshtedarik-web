@@ -20,7 +20,7 @@ function doPost(e) {
       clean(d.ref), clean(d.business), clean(d.contact), clean(d.phone), clean(d.email),
       clean(d.type), clean(d.district), clean(d.covers), clean(d.days), clean(d.slot), clean(d.payment),
       clean(d.items) + (d.extra ? '\nDiğer: ' + clean(d.extra) : ''),
-      clean(d.pain), clean(d.trial), '', clean(d.source),
+      clean(d.pain), '', '', clean(d.source),
       'Yeni'
     ]);
 
@@ -48,7 +48,6 @@ function notify_(ss, d) {
     d.covers ? 'Günlük kuver: ' + d.covers : '',
     'Teslimat: ' + d.days + ' / ' + d.slot,
     'Ödeme: ' + d.payment,
-    'Deneme teslimatı: ' + d.trial,
     '',
     'Ürünler:',
     d.items || '-',
