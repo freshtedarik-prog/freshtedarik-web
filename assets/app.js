@@ -19,21 +19,56 @@
     return String(v).trim();
   }
 
-  /* ---------- Analytics (yalnızca ID girildiyse) ---------- */
+  /* ---------- Ölçüm: Google (ID girildiyse) + panelin kendi sayacı ---------- */
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
   window.gtag = window.gtag || gtag;
-  if (C.GA_ID || C.ADS_ID) {
-    var s = document.createElement("script");
-    s.async = true;
-    s.src = "https://www.googletagmanager.com/gtag/js?id=" + (C.GA_ID || C.ADS_ID);
-    document.head.appendChild(s);
-    gtag("js", new Date());
-    if (C.GA_ID) gtag("config", C.GA_ID);
-    if (C.ADS_ID) gtag("config", C.ADS_ID);
+  var gaLoaded = false, ADS = { id: C.ADS_ID, label: C.ADS_LEAD_LABEL };
+  function initGoogle(gaId, adsId, gtmId) {
+    if (gaLoaded) return;
+    var first = gaId || adsId;
+    if (first) {
+      gaLoaded = true;
+      var s = document.createElement("script");
+      s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(first);
+      document.head.appendChild(s);
+      gtag("js", new Date());
+      if (gaId) gtag("config", gaId);
+      if (adsId) gtag("config", adsId);
+    }
+    if (gtmId && /^GTM-/.test(gtmId)) {
+      window.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+      var g = document.createElement("script"); g.async = true;
+      g.src = "https://www.googletagmanager.com/gtm.js?id=" + encodeURIComponent(gtmId);
+      document.head.appendChild(g);
+    }
+  }
+  initGoogle(C.GA_ID, C.ADS_ID, "");
+
+  var OWN_EVENTS = ["page_view", "whatsapp_click", "phone_click", "email_click", "instagram_click", "add_to_quote", "cta_click", "cart_open", "generate_lead", "category_click", "map_click"];
+  function visitorId() {
+    try {
+      var v = localStorage.getItem("ft_vid");
+      if (!v) { v = Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem("ft_vid", v); }
+      return v;
+    } catch (e) { return ""; }
+  }
+  function ownTrack(ev, label) {
+    if (!C.FORM_ENDPOINT || OWN_EVENTS.indexOf(ev) < 0) return;
+    if (/localhost|127\.0\.0\.1|^file:/.test(location.href)) return;
+    var payload = JSON.stringify({
+      action: "track", ev: ev, label: label || "", page: location.pathname + location.hash,
+      src: utm(), device: /Mobi|Android/i.test(navigator.userAgent) ? "Mobil" : "Masaüstü", vid: visitorId()
+    });
+    try {
+      if (navigator.sendBeacon) navigator.sendBeacon(C.FORM_ENDPOINT, new Blob([payload], { type: "text/plain" }));
+      else fetch(C.FORM_ENDPOINT, { method: "POST", mode: "no-cors", body: payload, keepalive: true });
+    } catch (e) {}
   }
   function track(name, params) {
     try { window.gtag("event", name, params || {}); } catch (e) {}
+    var own = OWN_EVENTS.indexOf(name) > -1 ? name : (/^cta_/.test(name) ? "cta_click" : null);
+    if (own) ownTrack(own, (params && (params.item_name || params.label)) || name);
   }
   document.addEventListener("click", function (e) {
     var t = e.target.closest("[data-track]");
@@ -48,54 +83,87 @@
     try { localStorage.setItem(STORE_KEY, JSON.stringify(basket)); } catch (e) {}
   }
 
-  /* ---------- Ürünleri yükle ---------- */
-  function fromSheet() {
-    var url = "https://docs.google.com/spreadsheets/d/" + C.SHEET_ID + "/gviz/tq?tqx=out:json&sheet=" + encodeURIComponent(C.PRODUCTS_SHEET) + "&headers=1";
-    return fetch(url).then(function (r) {
-      if (!r.ok) throw new Error("sheet");
-      return r.text();
-    }).then(function (txt) {
-      var json = JSON.parse(txt.slice(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
-      var cols = json.table.cols.map(function (c) { return (c.label || "").trim(); });
-      var idx = function (name) { return cols.indexOf(name); };
-      var get = function (row, name) { var i = idx(name); var cell = i > -1 ? row.c[i] : null; return cell ? (cell.f != null && typeof cell.v !== "string" ? cell.v : cell.v) : ""; };
-      var list = json.table.rows.map(function (row) {
-        return {
-          id: get(row, "ID"), cat: get(row, "Kategori"), name: get(row, "Ürün Adı"),
-          unit: get(row, "Birim") || "kg", sale: get(row, "Satış Şekli"), season: get(row, "Sezon"),
-          desc: get(row, "Kısa Açıklama"), img: get(row, "Görsel URL"),
-          featured: String(get(row, "Öne Çıkan")).toLowerCase() === "evet",
-          live: String(get(row, "Yayında")).toLowerCase() === "evet",
-          order: Number(get(row, "Sıra")) || 999
-        };
-      }).filter(function (p) { return p.id && p.name && p.live; });
-      if (!list.length) throw new Error("empty");
-      list.sort(function (a, b) { return a.order - b.order; });
-      return list;
+  /* ---------- Ürünler ve site ayarları (panelden) ---------- */
+  function fromPanel() {
+    return fetch(C.FORM_ENDPOINT + "?action=public").then(function (r) {
+      if (!r.ok) throw new Error("api");
+      return r.json();
+    }).then(function (res) {
+      if (!res || !res.ok) throw new Error("api");
+      return res;
     });
   }
 
+  var waText = "Merhaba, Fresh Tedarik ürünleri için fiyat teklifi almak istiyorum.";
   function init() {
     loadBasket();
     renderChips();
     renderDistricts();
     renderDays();
-    var waText = "Merhaba, Fresh Tedarik ürünleri için fiyat teklifi almak istiyorum.";
     ["waContact", "waBar"].forEach(function (id) { var a = document.getElementById(id); if (a) a.href = waLink(waText); });
     $("#year").textContent = new Date().getFullYear();
 
     products = window.FT_FALLBACK_PRODUCTS.slice();
     renderProducts();
     renderBasket();
-    fromSheet().then(function (list) {
-      products = list;
-      renderChips();
-      renderProducts();
-      renderBasket();
+    ownTrack("page_view", document.referrer ? "ref" : "direct");
+    if (!C.FORM_ENDPOINT) return;
+    fromPanel().then(function (res) {
+      if (res.products && res.products.length) {
+        products = res.products;
+        renderChips(); renderProducts(); renderBasket();
+      }
+      applySettings(res.settings || {});
     }).catch(function () { /* yedek liste kullanılıyor */ });
   }
 
   function waLink(text) { return "https://wa.me/" + C.WHATSAPP + "?text=" + encodeURIComponent(text); }
+
+  function applySettings(s) {
+    if (s.whatsapp) {
+      C.WHATSAPP = String(s.whatsapp).replace(/\D/g, "");
+      ["waContact", "waBar"].forEach(function (id) { var a = document.getElementById(id); if (a) a.href = waLink(waText); });
+    }
+    if (s.phone) {
+      var d = String(s.phone).replace(/\D/g, "").replace(/^0/, "90");
+      $$("[data-tel]").forEach(function (a) { a.href = "tel:+" + d; });
+      if ($("#phoneText")) $("#phoneText").textContent = s.phone;
+      C.PHONE_DISPLAY = s.phone;
+    }
+    if (s.email) { $("#emailText").textContent = s.email; $("#emailLink").href = "mailto:" + s.email; }
+    if (s.address) { $("#addrText").textContent = s.address; $("#mapLink").href = "https://maps.google.com/?q=" + encodeURIComponent(s.address); }
+    if (s.instagram) {
+      var u = String(s.instagram).replace(/^@/, "");
+      $$("[data-ig]").forEach(function (a) { a.href = "https://www.instagram.com/" + encodeURIComponent(u) + "/"; });
+      if ($("#igText")) $("#igText").textContent = "@" + u;
+    }
+    if (s.heroTitle) {
+      $("#heroTitle").innerHTML = esc(s.heroTitle).replace(/\*\*(.+?)\*\*/g, "<span>$1</span>");
+    }
+    if (s.heroLead) $("#heroLead").textContent = s.heroLead;
+    if (s.heroImage) $("#heroImg").src = imgUrl(s.heroImage, 1100);
+    if (s.tagOut) $("#tagOut").textContent = s.tagOut;
+    if (s.tagArea) $("#tagArea").textContent = s.tagArea;
+    var ann = $("#announce");
+    if (s.announcement && String(s.announcement).trim()) { ann.textContent = s.announcement; ann.hidden = false; } else { ann.hidden = true; }
+    renderInstagram(s.instagramPosts);
+    ADS.id = s.adsId || ADS.id; ADS.label = s.adsLabel || ADS.label;
+    initGoogle(s.gaId, s.adsId, s.gtmId);
+  }
+
+  function renderInstagram(raw) {
+    var posts = String(raw || "").split(/\s+/).filter(function (x) { return /^https:\/\/(www\.)?instagram\.com\/(p|reel)\/[\w-]+/.test(x); }).slice(0, 6);
+    var sec = $("#instagram");
+    if (!posts.length) { sec.hidden = true; return; }
+    $("#igGrid").innerHTML = posts.map(function (p) {
+      var url = p.split("?")[0].replace(/\/?$/, "/");
+      return '<blockquote class="instagram-media" data-instgrm-permalink="' + esc(url) + '" data-instgrm-version="14"><a href="' + esc(url) + '" target="_blank" rel="noopener">Instagram gönderisini görüntüle</a></blockquote>';
+    }).join("");
+    sec.hidden = false;
+    if (window.instgrm) { window.instgrm.Embeds.process(); return; }
+    var sc = document.createElement("script"); sc.async = true; sc.src = "https://www.instagram.com/embed.js";
+    document.body.appendChild(sc);
+  }
 
   /* ---------- Kategori çipleri ---------- */
   function renderChips() {
@@ -109,7 +177,7 @@
     if (chip) { activeCat = chip.getAttribute("data-chip"); renderChips(); renderProducts(); }
     var cat = e.target.closest("[data-cat]");
     if (cat) {
-      activeCat = cat.getAttribute("data-cat"); renderChips(); renderProducts();
+      activeCat = cat.getAttribute("data-cat"); renderChips(); renderProducts(); track("category_click", { label: activeCat });
       document.getElementById("urunler").scrollIntoView();
     }
   });
@@ -252,12 +320,12 @@
     btn.disabled = true; btn.textContent = "Gönderiliyor…";
 
     var send = C.FORM_ENDPOINT
-      ? fetch(C.FORM_ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data) })
+      ? fetch(C.FORM_ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(Object.assign({ action: "lead" }, data)) })
       : Promise.resolve();
 
     send.catch(function () {}).then(function () {
       track("generate_lead", { value: 1, currency: "TRY", business_type: data.type, district: data.district });
-      if (C.ADS_ID && C.ADS_LEAD_LABEL) track("conversion", { send_to: C.ADS_ID + "/" + C.ADS_LEAD_LABEL });
+      if (ADS.id && ADS.label) { try { window.gtag("event", "conversion", { send_to: ADS.id + "/" + ADS.label }); } catch (e) {} }
 
       var waMsg = "Merhaba, Fresh Tedarik teklif talebi (" + data.ref + ")\n" +
         "İşletme: " + data.business + " (" + data.type + ", " + data.district + ")\n" +
