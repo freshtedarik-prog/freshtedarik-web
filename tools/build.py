@@ -89,6 +89,7 @@ HEADER = '''<header class="topbar">
       <a href="../kuru-gida-bakliyat/">Kuru Gıda</a>
       <a href="../kumanya/">Kumanya</a>
       <a href="../hizmet-bolgeleri/">Hizmet Bölgeleri</a>
+      <a href="../blog/">Blog</a>
       <a href="../#iletisim">İletişim</a>
     </nav>
     <div class="topbar-actions">
@@ -109,7 +110,7 @@ FOOTER = f'''<footer>
   <div class="wrap">
     <img class="footer-logo" src="../assets/logo-yatay-koyu.png" alt="Fresh Tedarik" width="350" height="50">
     <nav aria-label="Alt menü">
-      <a href="../sebze-meyve-tedarigi/">Sebze Meyve Tedariği</a><a href="../kuru-gida-bakliyat/">Kuru Gıda</a><a href="../kumanya/">Kumanya</a><a href="../hizmet-bolgeleri/">Hizmet Bölgeleri</a><a href="../#teklif">Teklif Al</a><a href="../kvkk.html">KVKK</a><a data-track="instagram_click" href="https://www.instagram.com/freshtedarik/" target="_blank" rel="noopener">Instagram</a>
+      <a href="../sebze-meyve-tedarigi/">Sebze Meyve Tedariği</a><a href="../kuru-gida-bakliyat/">Kuru Gıda</a><a href="../kumanya/">Kumanya</a><a href="../hizmet-bolgeleri/">Hizmet Bölgeleri</a><a href="../blog/">Blog</a><a href="../#teklif">Teklif Al</a><a href="../kvkk.html">KVKK</a><a data-track="instagram_click" href="https://www.instagram.com/freshtedarik/" target="_blank" rel="noopener">Instagram</a>
     </nav>
     <span>© {datetime.date.today().year} Fresh Gıda ve Tarım Ürünleri</span>
   </div>
@@ -308,6 +309,132 @@ hb = (head("İstanbul Sebze Meyve Tedarik Hizmet Bölgeleri | Fresh Tedarik",
       + "</main>\n" + FOOTER)
 write("hizmet-bolgeleri/index.html", hb)
 PAGES.append(("hizmet-bolgeleri/", "0.7"))
+
+
+# ---------------- Blog ----------------
+MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+
+
+def trdate(d):
+    y, m, dd = d.split("-")
+    return f"{int(dd)} {MONTHS[int(m) - 1]} {y}"
+
+
+def inline(t):
+    t = html.escape(t, quote=False)
+    t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
+    t = re.sub(r"\[(.+?)\]\((.+?)\)", lambda m: '<a href="' + m.group(2) + '">' + m.group(1) + "</a>", t)
+    return t
+
+
+def md(text):
+    out, para, lst = [], [], None
+
+    def flush():
+        nonlocal para, lst
+        if para:
+            out.append("<p>" + inline(" ".join(para)) + "</p>")
+            para = []
+        if lst:
+            tag = lst[0]
+            out.append("<" + tag + ">" + "".join("<li>" + inline(i) + "</li>" for i in lst[1]) + "</" + tag + ">")
+            lst = None
+
+    for line in text.splitlines():
+        l = line.rstrip()
+        if not l.strip():
+            flush()
+            continue
+        if l.startswith("## "):
+            flush()
+            out.append("<h2>" + inline(l[3:]) + "</h2>")
+            continue
+        m = re.match(r"^(\d+)\. (.*)", l)
+        if l.startswith("- ") or m:
+            if para:
+                flush()
+            tag = "ol" if m else "ul"
+            if not lst or lst[0] != tag:
+                flush()
+                lst = (tag, [])
+            lst[1].append(m.group(2) if m else l[2:])
+            continue
+        if lst:
+            flush()
+        para.append(l.strip())
+    flush()
+    return "\n".join(out)
+
+
+POSTS = []
+for f in sorted((ROOT / "tools/blog").glob("*.md")):
+    raw = f.read_text(encoding="utf-8")
+    meta_txt, body = raw.split("\n---\n", 1)
+    meta = dict(l.split(": ", 1) for l in meta_txt.strip().splitlines())
+    meta["slug"] = f.stem
+    meta["html"] = md(body)
+    POSTS.append(meta)
+POSTS.sort(key=lambda p: (p["date"], p["title"]), reverse=True)
+
+
+def post_card(p, prefix):
+    return ('<a class="post-card" href="' + prefix + p["slug"] + '/"><img src="' + e(img(p["image"], 700)) + '" alt="' + e(p["image_alt"]) + '" loading="lazy" width="700" height="460">'
+            + '<span class="post-meta">' + e(p["category"]) + " · " + p["read"] + ' dk okuma</span><span class="post-title">' + e(p["title"]) + '</span><span class="post-desc">' + e(p["description"]) + "</span></a>")
+
+
+def relink(text, depth):
+    return text.replace('href="../', 'href="' + depth).replace('src="../', 'src="' + depth)
+
+
+BLOG_INTRO = ('<main id="top"><section class="hero page-hero"><div class="wrap" style="max-width:860px"><div class="hero-copy">'
+              '<nav class="breadcrumb" aria-label="Sayfa yolu"><a href="../">Ana Sayfa</a><span aria-hidden="true">/</span><span>Blog</span></nav>'
+              '<h1>Mutfak <span>Rehberi</span></h1>'
+              '<p class="lead">Restoran, kafe ve otel mutfakları için firesiz sipariş, doğru depolama, mevsimlik menü ve maliyet üzerine pratik yazılar.</p>'
+              '</div></div></section>'
+              '<section class="section products-section"><div class="wrap"><div class="post-grid">')
+
+bl = (head("Mutfak Rehberi: Restoran ve Kafeler İçin Tedarik Blogu | Fresh Tedarik",
+           "Restoran, kafe ve otel işletmecileri için sebze meyve firesi, depolama, mevsimlik menü, tedarikçi seçimi ve maliyet üzerine pratik yazılar.",
+           "blog/", [crumbs("Blog", "blog/")])
+      + HEADER + BLOG_INTRO + "".join(post_card(p, "") for p in POSTS) + "</div></div></section>"
+      + cta_band("Tedarik Tarafını Bize Bırakın", "Mutfağınıza en uygun ürünleri seçelim, servisinizden önce teslim edelim. İstanbul genelinde teslimat ücretsiz.")
+      + "</main>\n" + FOOTER)
+write("blog/index.html", bl)
+PAGES.append(("blog/", "0.7"))
+
+for p in POSTS:
+    path = "blog/" + p["slug"] + "/"
+    others = [o for o in POSTS if o["slug"] != p["slug"]][:3]
+    bc = crumbs("Blog", "blog/")
+    bc["itemListElement"].append({"@type": "ListItem", "position": 3, "name": p["title"], "item": SITE + "/" + path})
+    ld = [bc, {"@context": "https://schema.org", "@type": "BlogPosting", "headline": p["title"], "description": p["description"],
+               "image": img(p["image"], 1200), "datePublished": p["date"], "dateModified": p["date"], "inLanguage": "tr-TR",
+               "author": {"@type": "Organization", "name": "Fresh Tedarik", "url": SITE + "/"},
+               "publisher": {"@type": "Organization", "name": "Fresh Tedarik", "logo": {"@type": "ImageObject", "url": SITE + "/assets/logo.png"}},
+               "mainEntityOfPage": SITE + "/" + path}]
+    art = ('<main id="top"><article>'
+           '<header class="hero page-hero post-hero"><div class="wrap" style="max-width:860px"><div class="hero-copy">'
+           '<nav class="breadcrumb" aria-label="Sayfa yolu"><a href="../">Ana Sayfa</a><span aria-hidden="true">/</span><a href="../blog/">Blog</a><span aria-hidden="true">/</span><span>' + e(p["category"]) + "</span></nav>"
+           "<h1>" + e(p["title"]) + "</h1>"
+           '<p class="post-meta">' + trdate(p["date"]) + " · " + p["read"] + " dk okuma · Fresh Tedarik</p>"
+           "</div></div></header>"
+           '<div class="wrap" style="max-width:960px"><img class="post-cover" src="' + e(img(p["image"], 1400)) + '" alt="' + e(p["image_alt"]) + '" width="1400" height="780" fetchpriority="high"></div>'
+           '<section class="section" style="padding-top:40px"><div class="wrap prose article">' + p["html"] + "</div></section>"
+           "</article>")
+    # yazı içi bağlantılar ../ ile başlıyor ve blog/<slug>/ konumuna göre yazıldı; şablon bağlantıları ise ../ = kök kabul ediyor
+    shell = relink(head(p["seo_title"] + " | Fresh Tedarik", p["description"], path, ld) + HEADER, "../../")
+    body_tpl = relink(art.replace(p["html"], "%%ARTICLE%%"), "../../").replace("%%ARTICLE%%", p["html"])
+    tail = relink(cta_band("Mutfağınız İçin Teklif Alın", "Sebze, meyve, kuru gıda ve kumanyayı tek sevkiyatta, İstanbul genelinde ücretsiz teslimatla getirelim.")
+                  + '<section class="section"><div class="wrap"><h2 style="margin-bottom:24px">Diğer Yazılar</h2><div class="post-grid">'
+                  + "".join(post_card(o, "../blog/") for o in others) + "</div></div></section></main>\n" + FOOTER, "../../")
+    write(path + "index.html", shell + body_tpl + tail)
+    PAGES.append((path, "0.6"))
+
+idx = (ROOT / "index.html").read_text(encoding="utf-8")
+latest = "".join(post_card(p, "blog/") for p in POSTS[:3])
+idx = re.sub(r"<!--BLOG:START-->.*?<!--BLOG:END-->", "<!--BLOG:START-->" + latest + "<!--BLOG:END-->", idx, flags=re.S)
+(ROOT / "index.html").write_text(idx, encoding="utf-8")
+
 
 # ---------------- Eski Wix adresleri ----------------
 REDIRECTS = {"ürünleri-mi-z": "sebze-meyve-tedarigi/", "neden-fresh-tedari-k": "#hakkimizda", "i-leti-şi-m": "#iletisim"}
