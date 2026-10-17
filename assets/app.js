@@ -3,7 +3,7 @@
   var C = window.FT_CONFIG;
   var STORE_KEY = "ft_teklif_sepeti_v1";
   var products = [];
-  var basket = {}; // id -> { qty, unit }
+  var basket = {}; // id -> { added }
   var activeCat = "Tümü";
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -146,12 +146,11 @@
     var id = b.getAttribute("data-add");
     var p = products.find(function (x) { return x.id === id; });
     if (basket[id]) { delete basket[id]; toast(p.name + " sepetten çıkarıldı"); }
-    else { basket[id] = { qty: "", unit: p.unit || "kg" }; toast(p.name + " teklif sepetine eklendi"); track("add_to_quote", { item_name: p.name }); }
+    else { basket[id] = { added: Date.now() }; toast(p.name + " teklif sepetine eklendi"); track("add_to_quote", { item_name: p.name }); }
     saveBasket(); renderProducts(); renderBasket();
   });
 
   /* ---------- Sepet ---------- */
-  var units = ["kg", "kasa", "adet", "bağ", "çuval", "paket", "koli"];
   var removeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
   function renderBasket() {
@@ -162,25 +161,12 @@
     $("#basketEmpty").hidden = n > 0;
     $("#basket").innerHTML = ids.map(function (id) {
       var p = products.find(function (x) { return x.id === id; });
-      var it = basket[id];
       return '<div class="basket-row">' +
         '<img src="' + esc(imgUrl(p.img, 120)) + '" alt="" loading="lazy">' +
-        '<div class="name">' + esc(p.name) + "<small>Haftalık miktar</small></div>" +
-        '<div class="qty"><input type="number" min="0" step="0.5" inputmode="decimal" id="q-' + esc(id) + '" data-qty="' + esc(id) + '" value="' + esc(it.qty) + '" aria-label="' + esc(p.name) + ' haftalık miktar" placeholder="0">' +
-        '<select data-unit="' + esc(id) + '" aria-label="' + esc(p.name) + ' birim">' +
-        units.map(function (u) { return "<option" + (u === it.unit ? " selected" : "") + ">" + u + "</option>"; }).join("") +
-        "</select></div>" +
+        '<div class="name">' + esc(p.name) + "<small>" + esc(p.cat.replace(" & Bakliyat", "")) + "</small></div>" +
         '<button type="button" class="remove" data-remove="' + esc(id) + '" aria-label="' + esc(p.name) + ' ürününü çıkar">' + removeIcon + "</button></div>";
     }).join("");
   }
-  document.addEventListener("input", function (e) {
-    var q = e.target.getAttribute("data-qty");
-    if (q && basket[q]) { basket[q].qty = e.target.value; saveBasket(); }
-  });
-  document.addEventListener("change", function (e) {
-    var u = e.target.getAttribute("data-unit");
-    if (u && basket[u]) { basket[u].unit = e.target.value; saveBasket(); }
-  });
   document.addEventListener("click", function (e) {
     var r = e.target.closest("[data-remove]");
     if (!r) return;
@@ -209,8 +195,7 @@
     return Object.keys(basket).map(function (id) {
       var p = products.find(function (x) { return x.id === id; });
       if (!p) return null;
-      var it = basket[id];
-      return p.name + ": " + (it.qty ? it.qty + " " + it.unit + "/hafta" : "miktar belirtilmedi");
+      return "- " + p.name;
     }).filter(Boolean).join("\n");
   }
 
@@ -253,7 +238,7 @@
       email: f.email.value.trim(),
       type: f.type.value,
       district: f.district.value,
-      covers: f.covers.value,
+      covers: "",
       days: $$('input[name="days"]:checked').map(function (x) { return x.value; }).join(", "),
       slot: f.slot.value,
       payment: f.payment.value,
@@ -277,7 +262,6 @@
       var waMsg = "Merhaba, Fresh Tedarik teklif talebi (" + data.ref + ")\n" +
         "İşletme: " + data.business + " (" + data.type + ", " + data.district + ")\n" +
         "Yetkili: " + data.contact + " · " + data.phone + "\n" +
-        (data.covers ? "Günlük kuver: " + data.covers + "\n" : "") +
         "Teslimat: " + (data.days || "-") + " · " + data.slot + "\n" +
         (data.items ? "\nÜrünler:\n" + data.items + "\n" : "") +
         (data.extra ? "\nDiğer: " + data.extra + "\n" : "") +

@@ -45,7 +45,6 @@ function notify_(ss, d) {
     'Yetkili: ' + d.contact,
     'Telefon: ' + d.phone,
     d.email ? 'E-posta: ' + d.email : '',
-    d.covers ? 'Günlük kuver: ' + d.covers : '',
     'Teslimat: ' + d.days + ' / ' + d.slot,
     'Ödeme: ' + d.payment,
     '',

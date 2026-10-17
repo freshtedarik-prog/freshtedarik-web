@@ -283,7 +283,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .panel .hint { color: var(--ink-soft); font-size: .92rem; margin-bottom: 18px; }
 .basket { display: grid; gap: 0; }
 .basket-row {
-  display: grid; grid-template-columns: 44px 1fr auto auto; gap: 10px; align-items: center;
+  display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center;
   padding: 10px 0; border-bottom: 1px solid var(--line);
 }
 .basket-row img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--green-tint); }
