@@ -18,6 +18,21 @@ PHONE = "0530 114 13 44"
 
 cfg = (ROOT / "assets/config.js").read_text(encoding="utf-8")
 PRODUCTS = [json.loads(l.strip().rstrip(",")) for l in cfg.split("FT_FALLBACK_PRODUCTS = [", 1)[1].splitlines() if l.strip().startswith("{")]
+
+# Panel ürünlerini (Google Tablosu) okumayı dene; olmazsa config.js'deki yedek liste kullanılır
+try:
+    import urllib.request
+    _ep = re.search(r'FORM_ENDPOINT:\s*"([^"]+)"', cfg).group(1)
+    with urllib.request.urlopen(_ep + "?action=public", timeout=30) as _r:
+        _res = json.loads(_r.read().decode("utf-8"))
+    if _res.get("ok") and _res.get("products"):
+        PRODUCTS = [{k: p.get(k) for k in ("id", "cat", "name", "unit", "sale", "season", "desc", "img", "featured")} for p in _res["products"]]
+        _lines = ",\n".join("  " + json.dumps(p, ensure_ascii=False) for p in PRODUCTS)
+        cfg = cfg.split("window.FT_FALLBACK_PRODUCTS = [", 1)[0] + "window.FT_FALLBACK_PRODUCTS = [\n" + _lines + "\n];\n"
+        (ROOT / "assets/config.js").write_text(cfg, encoding="utf-8")
+        print("ürünler panelden alındı:", len(PRODUCTS))
+except Exception as _err:
+    print("panel ürünleri alınamadı, yedek liste kullanılıyor:", _err)
 DISTRICTS = re.search(r"DISTRICTS:\s*\[(.*?)\]", cfg, re.S).group(1)
 DISTRICTS = [d.strip().strip('"') for d in DISTRICTS.split(",")]
 ANADOLU = {"Adalar", "Ataşehir", "Beykoz", "Çekmeköy", "Kadıköy", "Kartal", "Maltepe", "Pendik", "Sancaktepe", "Sultanbeyli", "Şile", "Tuzla", "Ümraniye", "Üsküdar"}
@@ -372,7 +387,13 @@ for f in sorted((ROOT / "tools/blog").glob("*.md")):
     meta_txt, body = raw.split("\n---\n", 1)
     meta = dict(l.split(": ", 1) for l in meta_txt.strip().splitlines())
     meta["slug"] = f.stem
+    if meta.get("status", "published").strip() == "draft":
+        continue
     meta["html"] = md(body)
+    meta.setdefault("read", str(max(2, round(len(body.split()) / 200))))
+    meta.setdefault("seo_title", meta["title"])
+    meta.setdefault("image_alt", meta["title"])
+    meta.setdefault("category", "Mutfak Rehberi")
     POSTS.append(meta)
 POSTS.sort(key=lambda p: (p["date"], p["title"]), reverse=True)
 
@@ -392,6 +413,12 @@ BLOG_INTRO = ('<main id="top"><section class="hero page-hero"><div class="wrap" 
               '<p class="lead">Restoran, kafe ve otel mutfakları için firesiz sipariş, doğru depolama, mevsimlik menü ve maliyet üzerine pratik yazılar.</p>'
               '</div></div></section>'
               '<section class="section products-section"><div class="wrap"><div class="post-grid">')
+
+import shutil
+_live = {p["slug"] for p in POSTS}
+for _d in (ROOT / "blog").glob("*/"):
+    if _d.is_dir() and _d.name not in _live:
+        shutil.rmtree(_d)
 
 bl = (head("Mutfak Rehberi: Restoran ve Kafeler İçin Tedarik Blogu | Fresh Tedarik",
            "Restoran, kafe ve otel işletmecileri için sebze meyve firesi, depolama, mevsimlik menü, tedarikçi seçimi ve maliyet üzerine pratik yazılar.",
