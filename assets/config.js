@@ -7,7 +7,7 @@ window.FT_CONFIG = {
 
   // Google Apps Script web uygulaması adresi (teklif formu -> Teklif Talepleri sekmesi + e-posta).
   // Kurulunca buraya yapıştırılacak: "https://script.google.com/macros/s/XXXX/exec"
-  FORM_ENDPOINT: "",
+  FORM_ENDPOINT: "https://script.google.com/macros/s/AKfycby3nD-gPhJK53NP8Y2fVlofnMfVvnt3x9k9WZkh8QAplHfX9dBeDxEsqe79ljjssTMF/exec",
 
   WHATSAPP: "905301141344",
   PHONE_DISPLAY: "0530 114 13 44",
