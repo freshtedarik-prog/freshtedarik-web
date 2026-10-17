@@ -389,3 +389,8 @@ footer a:hover { color: #fff; }
 /* Instagram gönderileri */
 .ig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; align-items: start; }
 .ig-grid .instagram-media { min-width: 0 !important; width: 100% !important; margin: 0 !important; }
+
+/* Altyapı imzası */
+footer .credit { margin-top: 22px; padding-top: 16px; border-top: 1px solid #ffffff14; justify-content: center; font-size: .8rem; color: #8FA597; }
+footer .credit a { color: #C9D9CE; }
+footer .credit a:hover { color: #fff; }
