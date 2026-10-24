@@ -147,8 +147,20 @@
     var ann = $("#announce");
     if (s.announcement && String(s.announcement).trim()) { ann.textContent = s.announcement; ann.hidden = false; } else { ann.hidden = true; }
     renderInstagram(s.instagramPosts);
+    renderRefs(s.references);
     ADS.id = s.adsId || ADS.id; ADS.label = s.adsLabel || ADS.label;
     initGoogle(s.gaId, s.adsId, s.gtmId);
+  }
+
+  function renderRefs(raw) {
+    var lines = String(raw || "").split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
+    var grid = $("#refsGrid");
+    if (!grid || !lines.length) return;
+    grid.innerHTML = lines.map(function (l) {
+      var parts = l.split("|"), name = parts[0].trim(), logo = (parts[1] || "").trim();
+      var inner = /^https:\/\//.test(logo) ? '<img src="' + esc(imgUrl(logo, 320)) + '" alt="' + esc(name) + ' logosu" loading="lazy" decoding="async">' : '<span class="ref-name">' + esc(name) + "</span>";
+      return '<li class="ref-card" title="' + esc(name) + '">' + inner + "</li>";
+    }).join("");
   }
 
   function renderInstagram(raw) {

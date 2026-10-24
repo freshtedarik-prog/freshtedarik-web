@@ -30,6 +30,7 @@ const SETTINGS = [
   ['tagOut', 'Etiket Çıkış', true, 'icerik', 'Sarı etiketteki Çıkış satırı'],
   ['tagArea', 'Etiket Bölge', true, 'icerik', 'Sarı etiketteki Bölge satırı'],
   ['announcement', 'Duyuru Metni', true, 'icerik', 'Doluysa sitenin en üstünde ince bir bant olarak görünür'],
+  ['references', 'Referanslar', true, 'icerik', 'Her satıra bir firma. Logo eklemek için: Firma Adı | logo görsel linki'],
   ['districts', 'Hizmet İlçeleri', false, 'genel', 'Virgülle ayırın'],
   ['minOrder', 'Minimum Sipariş', false, 'genel', ''],
   ['deliveryHours', 'Teslimat Saatleri', false, 'genel', ''],

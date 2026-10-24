@@ -399,7 +399,7 @@
   function fieldFor(m) {
     var v = state.settings[m.key] || "";
     if (m.key === "heroImage") return imagePicker("s_heroImage", v, true);
-    var long = /heroLead|instagramPosts|address|announcement|notifyEmails|districts/.test(m.key);
+    var long = /heroLead|instagramPosts|references|address|announcement|notifyEmails|districts/.test(m.key);
     return '<div class="field"><label for="s_' + m.key + '">' + esc(m.label) + "</label>" +
       (long ? '<textarea class="input" id="s_' + m.key + '">' + esc(v) + "</textarea>" : '<input class="input" id="s_' + m.key + '" value="' + esc(v) + '">') +
       (m.help ? '<span class="help">' + esc(m.help) + "</span>" : "") + "</div>";
