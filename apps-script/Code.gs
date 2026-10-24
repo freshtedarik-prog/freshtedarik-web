@@ -51,6 +51,7 @@ function doGet(e) {
     if (a === 'public') return json_(publicData_());
     return json_({ ok: false, error: 'Bilinmeyen işlem' });
   } catch (err) {
+    console.error('İşlem hatası [' + a + ']: ' + (err.stack || err));
     return json_({ ok: false, error: String(err.message || err) });
   }
 }
@@ -62,8 +63,9 @@ function doPost(e) {
   try {
     if (a === 'lead') return json_(saveLead_(d));
     if (a === 'track') return json_(track_(d));
-    if (a === 'login') return json_(login_(d.password));
+    if (a === 'login') { const lr = login_(d.password); if (!lr.ok) console.warn('Giriş başarısız: ' + lr.error); return json_(lr); }
 
+    if (!checkToken_(d.token)) { console.warn('Geçersiz oturum: ' + a); } 
     if (!checkToken_(d.token)) return json_({ ok: false, auth: false, error: 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.' });
 
     switch (a) {
