@@ -727,3 +727,9 @@ function scSitemapSubmit_() {
 function searchConsoleIzni() {
   Logger.log(JSON.stringify(scFetch_('get', '/sites')));
 }
+
+/** Editörden çalıştırılır: site haritasını Google'a gönderir ve durumunu yazar. */
+function siteHaritasiGonder() {
+  scSitemapSubmit_();
+  Logger.log(JSON.stringify(scFetch_('get', '/sites/' + encodeURIComponent(scSite_()) + '/sitemaps')));
+}
