@@ -125,7 +125,7 @@ function saveLead_(d) {
     const sh = sheet_(SH.lead);
     sh.appendRow([
       new Date(),
-      clean_(d.ref, 40), clean_(d.business, 200), clean_(d.contact, 120), clean_(d.phone, 40), clean_(d.email, 200),
+      clean_(d.ref, 40), clean_(d.business, 200), clean_(d.contact, 120), "'" + String(d.phone || '').replace(/[^\d+ ()]/g, '').slice(0, 40), clean_(d.email, 200),
       clean_(d.type, 60), clean_(d.district, 60), '', clean_(d.days, 80), clean_(d.slot, 40), clean_(d.payment, 40),
       clean_(d.items) + (d.extra ? '\nDiğer: ' + clean_(d.extra) : ''),
       clean_(d.pain), '', '', clean_(d.source, 300),
