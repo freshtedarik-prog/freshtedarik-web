@@ -486,9 +486,9 @@ print("ok:", len(PRODUCTS), "ürün,", len(PAGES), "sayfa")
 
 # ---------------- önbellek sürümü: css/js değişince tarayıcı yenisini indirsin ----------------
 import hashlib
-_assets = ["assets/style.css", "assets/app.js", "assets/config.js", "assets/sub.js", "assets/admin.js", "assets/admin-blog.js"]
+_assets = ["assets/style.css", "assets/app.js", "assets/config.js", "assets/sub.js", "assets/admin.js", "assets/admin-blog.js", "assets/admin-search.js"]
 _ver = hashlib.md5(b"".join((ROOT / a).read_bytes() for a in _assets if (ROOT / a).exists())).hexdigest()[:8]
-_pat = re.compile(r'((?:\.\./)*assets/(?:style\.css|app\.js|config\.js|sub\.js|admin\.js|admin-blog\.js))(\?v=\w+)?"')
+_pat = re.compile(r'((?:\.\./)*assets/(?:style\.css|app\.js|config\.js|sub\.js|admin\.js|admin-blog\.js|admin-search\.js))(\?v=\w+)?"')
 for _f in ROOT.rglob("*.html"):
     if "tools" in _f.parts or ".github" in _f.parts:
         continue

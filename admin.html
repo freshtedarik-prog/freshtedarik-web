@@ -190,6 +190,12 @@ textarea.input { min-height: 90px; resize: vertical; }
 .serp-url { font-size: .8rem; color: #4d5156; }
 .serp-title { color: #1a0dab; font-size: 1.15rem; line-height: 1.3; overflow-wrap: anywhere; }
 .serp-desc { color: #4d5156; font-size: .88rem; }
+.sc-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.sc-table th { text-align: left; font-weight: 600; color: var(--ink-soft); padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: .82rem; }
+.sc-table td { padding: 9px 6px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.sc-table tr:last-child td { border-bottom: 0; }
+.sc-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sc-table a { color: var(--green); }
 .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; border: 0; background: none; cursor: pointer; }
 .icon-btn:hover { background: var(--paper); }
 .icon-btn svg { width: 22px; height: 22px; }
@@ -269,8 +275,9 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="assets/config.js?v=797a7534"></script>
-<script src="assets/admin.js?v=797a7534"></script>
-<script src="assets/admin-blog.js?v=797a7534"></script>
+<script src="assets/config.js?v=87f94f05"></script>
+<script src="assets/admin.js?v=87f94f05"></script>
+<script src="assets/admin-blog.js?v=87f94f05"></script>
+<script src="assets/admin-search.js?v=87f94f05"></script>
 </body>
 </html>

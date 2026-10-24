@@ -82,6 +82,8 @@ function doPost(e) {
       case 'blogDelete': return json_(blogDelete_(d.slug, d.sha));
       case 'githubStatus': return json_(githubStatus_());
       case 'githubSave': return json_(githubSave_(d.githubToken));
+      case 'searchConsole': return json_(searchConsole_(Number(d.days) || 28));
+      case 'scSitemapSubmit': return json_(scSitemapSubmit_());
       case 'logout': CacheService.getScriptCache().remove('tok_' + d.token); return json_({ ok: true });
       default: return json_({ ok: false, error: 'Bilinmeyen işlem: ' + a });
     }
@@ -616,4 +618,111 @@ function githubStatus_() {
 function izinleriOnayla() {
   UrlFetchApp.fetch('https://api.github.com/zen', { muteHttpExceptions: true });
   Logger.log('İzinler tamam.');
+}
+
+
+/* ---------------- Google Search Console ---------------- */
+
+const SC_API = 'https://searchconsole.googleapis.com/webmasters/v3';
+const SC_SITEMAP = 'https://www.freshtedarik.com/sitemap.xml';
+
+function scFetch_(method, path, payload) {
+  const res = UrlFetchApp.fetch(SC_API + path, {
+    method: method,
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+    contentType: 'application/json',
+    payload: payload ? JSON.stringify(payload) : undefined,
+    muteHttpExceptions: true
+  });
+  const code = res.getResponseCode();
+  const text = res.getContentText();
+  if (code >= 300) {
+    let msg = text;
+    try { msg = JSON.parse(text).error.message; } catch (_) {}
+    if (code === 403 && /not been used|disabled/i.test(msg)) throw new Error('Search Console API bu projede kapalı. Kurulum adımı gerekiyor.');
+    if (code === 403) throw new Error('freshtedarik@gmail.com hesabının bu sitede Search Console yetkisi yok.');
+    throw new Error('Search Console hatası (' + code + '): ' + msg);
+  }
+  return text ? JSON.parse(text) : {};
+}
+
+function scSite_() {
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get('sc_site');
+  if (hit) return hit;
+  const sites = (scFetch_('get', '/sites').siteEntry || []).filter(s => s.permissionLevel !== 'siteUnverifiedUser');
+  const pick = sites.find(s => s.siteUrl === 'sc-domain:freshtedarik.com') ||
+               sites.find(s => /freshtedarik\.com/.test(s.siteUrl));
+  if (!pick) return '';
+  cache.put('sc_site', pick.siteUrl, 21600);
+  return pick.siteUrl;
+}
+
+function scQuery_(site, start, end, dims, limit) {
+  return scFetch_('post', '/sites/' + encodeURIComponent(site) + '/searchAnalytics/query', {
+    startDate: start, endDate: end, dimensions: dims, rowLimit: limit || 1000, dataState: 'all'
+  }).rows || [];
+}
+
+function searchConsole_(days) {
+  const site = scSite_();
+  if (!site) return { ok: true, connected: false };
+  const cache = CacheService.getScriptCache();
+  const key = 'sc_' + days;
+  const hit = cache.get(key);
+  if (hit) return JSON.parse(hit);
+
+  const tz = 'Europe/Istanbul';
+  const fmt = d => Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+  const end = new Date();
+  const start = new Date(Date.now() - (days - 1) * 864e5);
+  const s = fmt(start), e = fmt(end);
+
+  const byDate = scQuery_(site, s, e, ['date']);
+  const queries = scQuery_(site, s, e, ['query'], 15);
+  const pages = scQuery_(site, s, e, ['page'], 10);
+  const devices = scQuery_(site, s, e, ['device'], 5);
+
+  const totals = byDate.reduce((t, r) => { t.clicks += r.clicks; t.impressions += r.impressions; t.posSum += r.position * r.impressions; return t; }, { clicks: 0, impressions: 0, posSum: 0 });
+  const series = [];
+  const map = {}; byDate.forEach(r => { map[r.keys[0]] = r; });
+  for (let i = days - 1; i >= 0; i--) {
+    const k = fmt(new Date(Date.now() - i * 864e5));
+    series.push({ day: k, clicks: map[k] ? map[k].clicks : 0, impressions: map[k] ? map[k].impressions : 0 });
+  }
+  const row = r => ({ key: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position });
+
+  let sitemaps = [];
+  try {
+    sitemaps = (scFetch_('get', '/sites/' + encodeURIComponent(site) + '/sitemaps').sitemap || []).map(m => ({
+      path: m.path, lastSubmitted: m.lastSubmitted, lastDownloaded: m.lastDownloaded, pending: m.isPending,
+      errors: Number(m.errors || 0), warnings: Number(m.warnings || 0),
+      submitted: (m.contents || []).reduce((a, c) => a + Number(c.submitted || 0), 0)
+    }));
+  } catch (_) {}
+
+  const out = {
+    ok: true, connected: true, site: site, days: days, start: s, end: e,
+    totals: {
+      clicks: totals.clicks, impressions: totals.impressions,
+      ctr: totals.impressions ? totals.clicks / totals.impressions : 0,
+      position: totals.impressions ? totals.posSum / totals.impressions : 0
+    },
+    series: series, queries: queries.map(row), pages: pages.map(row), devices: devices.map(row), sitemaps: sitemaps
+  };
+  try { cache.put(key, JSON.stringify(out), 3600); } catch (_) {}
+  return out;
+}
+
+function scSitemapSubmit_() {
+  const site = scSite_();
+  if (!site) return { ok: false, error: 'Search Console mülkü bulunamadı. Önce alan adını Search Console\'da doğrulayın.' };
+  scFetch_('put', '/sites/' + encodeURIComponent(site) + '/sitemaps/' + encodeURIComponent(SC_SITEMAP));
+  CacheService.getScriptCache().removeAll(['sc_7', 'sc_28', 'sc_90']);
+  return { ok: true };
+}
+
+/** Search Console iznini onaylatmak için editörden bir kez çalıştırın. */
+function searchConsoleIzni() {
+  Logger.log(JSON.stringify(scFetch_('get', '/sites')));
 }
