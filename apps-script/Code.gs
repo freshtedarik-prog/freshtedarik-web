@@ -65,8 +65,7 @@ function doPost(e) {
     if (a === 'track') return json_(track_(d));
     if (a === 'login') { const lr = login_(d.password); if (!lr.ok) console.warn('Giriş başarısız: ' + lr.error); return json_(lr); }
 
-    if (!checkToken_(d.token)) { console.warn('Geçersiz oturum: ' + a); } 
-    if (!checkToken_(d.token)) return json_({ ok: false, auth: false, error: 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.' });
+    if (!checkToken_(d.token)) { console.warn('Geçersiz oturum: ' + a); return json_({ ok: false, auth: false, error: 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.' }); }
 
     switch (a) {
       case 'dashboard': return json_(dashboard_(Number(d.days) || 30));
@@ -90,6 +89,7 @@ function doPost(e) {
       default: return json_({ ok: false, error: 'Bilinmeyen işlem: ' + a });
     }
   } catch (err) {
+    console.error('İşlem hatası [' + a + ']: ' + (err.stack || err));
     return json_({ ok: false, error: String(err.message || err) });
   }
 }
