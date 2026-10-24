@@ -735,3 +735,21 @@ function siteHaritasiGonder() {
   scSitemapSubmit_();
   Logger.log(JSON.stringify(scFetch_('get', '/sites/' + encodeURIComponent(scSite_()) + '/sitemaps')));
 }
+
+/** Editörden çalıştırılır: panelin giriş sonrası çağırdığı işlemleri dener, hataları günlüğe yazar. */
+function panelTesti() {
+  const tests = {
+    dashboard: () => dashboard_(30),
+    leads: () => leads_(),
+    products: () => readProducts_(false),
+    settings: () => readSettings_(false),
+    blogList: () => blogList_(),
+    githubStatus: () => githubStatus_(),
+    searchConsole: () => searchConsole_(28)
+  };
+  Object.keys(tests).forEach(k => {
+    try { const r = tests[k](); Logger.log(k + ': ' + (r && r.ok === false ? 'HATA ' + r.error : 'tamam')); }
+    catch (err) { Logger.log(k + ': İSTİSNA ' + (err.stack || err)); }
+  });
+  Logger.log('login_tries: ' + CacheService.getScriptCache().get('login_tries') + ' | MUST_CHANGE: ' + PropertiesService.getScriptProperties().getProperty('MUST_CHANGE'));
+}
