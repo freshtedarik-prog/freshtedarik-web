@@ -319,21 +319,29 @@
     var btn = $("#submitBtn");
     btn.disabled = true; btn.textContent = "Gönderiliyor…";
 
-    var send = C.FORM_ENDPOINT
-      ? fetch(C.FORM_ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(Object.assign({ action: "lead" }, data)) })
-      : Promise.resolve();
+    var waMsg = "Merhaba, Fresh Tedarik teklif talebi (" + data.ref + ")\n" +
+      "İşletme: " + data.business + " (" + data.type + ", " + data.district + ")\n" +
+      "Yetkili: " + data.contact + " · " + data.phone + "\n" +
+      "Teslimat: " + (data.days || "-") + " · " + data.slot + "\n" +
+      (data.items ? "\nÜrünler:\n" + data.items + "\n" : "") +
+      (data.extra ? "\nDiğer: " + data.extra + "\n" : "") +
+      "Ödeme: " + data.payment;
 
-    send.catch(function () {}).then(function () {
+    function sendLead(tries) {
+      return fetch(C.FORM_ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(Object.assign({ action: "lead" }, data)) })
+        .then(function (r) { return r.json(); })
+        .then(function (res) { if (!res || !res.ok) throw new Error((res && res.error) || "kayıt"); return res; })
+        .catch(function (e) {
+          if (tries > 0) return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return sendLead(tries - 1); });
+          throw e;
+        });
+    }
+
+    var send = C.FORM_ENDPOINT ? sendLead(1) : Promise.resolve();
+
+    send.then(function () {
       track("generate_lead", { value: 1, currency: "TRY", business_type: data.type, district: data.district });
       if (ADS.id && ADS.label) { try { window.gtag("event", "conversion", { send_to: ADS.id + "/" + ADS.label }); } catch (e) {} }
-
-      var waMsg = "Merhaba, Fresh Tedarik teklif talebi (" + data.ref + ")\n" +
-        "İşletme: " + data.business + " (" + data.type + ", " + data.district + ")\n" +
-        "Yetkili: " + data.contact + " · " + data.phone + "\n" +
-        "Teslimat: " + (data.days || "-") + " · " + data.slot + "\n" +
-        (data.items ? "\nÜrünler:\n" + data.items + "\n" : "") +
-        (data.extra ? "\nDiğer: " + data.extra + "\n" : "") +
-        "Ödeme: " + data.payment;
       $("#waAfter").href = waLink(waMsg);
       $("#refNo").textContent = data.ref;
       $("#successPhone").textContent = data.phone;
@@ -341,6 +349,11 @@
       $("#success").hidden = false;
       $("#formPanel").scrollIntoView({ block: "start" });
       basket = {}; saveBasket(); renderBasket(); renderProducts();
+      btn.disabled = false; btn.textContent = "Teklif talebini gönder";
+    }, function () {
+      track("cta_click", { label: "lead_error" });
+      err.innerHTML = 'Talebiniz şu an iletilemedi. Lütfen birkaç dakika sonra tekrar deneyin ya da <a href="' + waLink(waMsg) + '" target="_blank" rel="noopener">talebinizi WhatsApp\'tan gönderin</a>.';
+      err.hidden = false;
       btn.disabled = false; btn.textContent = "Teklif talebini gönder";
     });
   });
