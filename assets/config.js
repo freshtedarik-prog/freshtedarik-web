@@ -24,7 +24,7 @@ window.FT_CONFIG = {
 
 /* Yedek ürün listesi (Sheets ile aynı içerik). img: Pexels fotoğraf numarası */
 window.FT_FALLBACK_PRODUCTS = [
-  {"id": "FT-001", "cat": "Sebze", "name": "Domates", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Salata, sos ve sıcak mutfak için günlük hal seçimi, sert ve dolgun domates.", "img": "33499935", "featured": true},
+  {"id": "FT-001", "cat": "Sebze", "name": "Domates", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Salata, sos ve sıcak mutfak için günlük hal seçimi, sert ve dolgun domates.", "img": "https://imgrosetta.yemek.com/static/uploads/2015/03/domates-meyve-mi-sebze-mi-yemekcom.jpg", "featured": true},
   {"id": "FT-002", "cat": "Sebze", "name": "Sivri Biber", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Kahvaltı tabakları ve sıcak yemekler için taze, parlak kabuklu sivri biber.", "img": "10899475", "featured": false},
   {"id": "FT-021", "cat": "Sebze", "name": "Çarliston Biber", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Açık yeşil, ince kabuklu çarliston; kahvaltı, kızartma ve salatalar için.", "img": "10847032", "featured": false},
   {"id": "FT-022", "cat": "Sebze", "name": "Köy Biberi", "unit": "kg", "sale": "Kasa / Kg", "season": "Yaz - Sonbahar", "desc": "Kıvrımlı, aromalı köy biberi; ızgara ve közleme için ideal.", "img": "2893525", "featured": false},
