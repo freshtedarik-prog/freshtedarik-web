@@ -639,7 +639,7 @@ function scFetch_(method, path, payload) {
   if (code >= 300) {
     let msg = text;
     try { msg = JSON.parse(text).error.message; } catch (_) {}
-    if (code === 403 && /not been used|disabled/i.test(msg)) throw new Error('Search Console API bu projede kapalı. Kurulum adımı gerekiyor.');
+    if (code === 403 && /not been used|disabled/i.test(msg)) { const pm = String(msg).match(/project[= ](\d+)/); throw new Error('Search Console API bu projede kapalı. Kurulum adımı gerekiyor.' + (pm ? ' (proje ' + pm[1] + ')' : '') + ' ' + msg); }
     if (code === 403) throw new Error('freshtedarik@gmail.com hesabının bu sitede Search Console yetkisi yok.');
     throw new Error('Search Console hatası (' + code + '): ' + msg);
   }
