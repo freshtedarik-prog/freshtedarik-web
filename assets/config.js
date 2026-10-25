@@ -24,9 +24,9 @@ window.FT_CONFIG = {
 
 /* Yedek ürün listesi (Sheets ile aynı içerik). img: Pexels fotoğraf numarası */
 window.FT_FALLBACK_PRODUCTS = [
-  {"id": "FT-001", "cat": "Sebze", "name": "Domates", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Salata, sos ve sıcak mutfak için günlük hal seçimi, sert ve dolgun domates.", "img": "https://imgrosetta.yemek.com/static/uploads/2015/03/domates-meyve-mi-sebze-mi-yemekcom.jpg", "featured": true},
+  {"id": "FT-001", "cat": "Sebze", "name": "Domates", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Salata, sos ve sıcak mutfak için günlük hal seçimi, sert ve dolgun domates.", "img": "https://media.istockphoto.com/id/2161594984/es/foto/tomates-rojos-en-primer-plano-de-la-mesa-del-mercado-vista-superior-imagen-de-comida-saludable.jpg?s=612x612&w=0&k=20&c=GXTumWuamBk-xokC-UPHvVp3P_eYD4cQZVnliyZGKMk=", "featured": true},
   {"id": "FT-002", "cat": "Sebze", "name": "Sivri Biber", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Kahvaltı tabakları ve sıcak yemekler için taze, parlak kabuklu sivri biber.", "img": "10899475", "featured": false},
-  {"id": "FT-021", "cat": "Sebze", "name": "Çarliston Biber", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Açık yeşil, ince kabuklu çarliston; kahvaltı, kızartma ve salatalar için.", "img": "10847032", "featured": false},
+  {"id": "FT-021", "cat": "Sebze", "name": "Çarliston Biber", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Açık yeşil, ince kabuklu çarliston; kahvaltı, kızartma ve salatalar için.", "img": "https://toprakana.com.tr/wp-content/uploads/2021/12/carliston.jpg", "featured": false},
   {"id": "FT-022", "cat": "Sebze", "name": "Köy Biberi", "unit": "kg", "sale": "Kasa / Kg", "season": "Yaz - Sonbahar", "desc": "Kıvrımlı, aromalı köy biberi; ızgara ve közleme için ideal.", "img": "2893525", "featured": false},
   {"id": "FT-023", "cat": "Sebze", "name": "Kapya Biber", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Etli ve tatlı kapya; közleme, sos ve meze hazırlığı için.", "img": "12482461", "featured": false},
   {"id": "FT-024", "cat": "Sebze", "name": "Dolmalık Biber", "unit": "kg", "sale": "Kasa / Kg", "season": "Tüm yıl", "desc": "Dolma ve sote için düzgün formlu, kalın etli dolmalık biber.", "img": "2893635", "featured": false},
