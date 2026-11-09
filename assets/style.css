@@ -473,3 +473,5 @@ a.cat { display: block; }
 .ref-name { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 1.5rem; line-height: 1.05; letter-spacing: .01em; color: var(--green-deep); }
 @media (max-width: 860px) { .refs-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 560px) { .refs-grid { grid-template-columns: repeat(2, 1fr); } .ref-card { min-height: 92px; } .ref-name { font-size: 1.15rem; } .ref-card:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+
+.hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }

@@ -291,6 +291,7 @@
   }
   utm();
 
+  var formStart = Date.now();
   $("#quoteForm").addEventListener("submit", function (e) {
     e.preventDefault();
     var f = e.target;
@@ -301,6 +302,7 @@
     });
     var phoneDigits = f.phone.value.replace(/\D/g, "");
     if (f.phone.value.trim() && phoneDigits.length < 10) missing.push("geçerli bir telefon numarası");
+    if (!Object.keys(basket).length && !$("#extraItems").value.trim()) missing.push("en az bir ürün seçimi");
     if (!f.kvkk.checked) missing.push("KVKK onayı");
     if (missing.length) {
       err.textContent = "Göndermeden önce şunları tamamlayın: " + missing.join(", ") + ".";
@@ -325,7 +327,9 @@
       items: itemsText(),
       extra: $("#extraItems").value.trim(),
       pain: f.pain.value.trim(),
-      source: utm()
+      source: utm(),
+      website: f.website ? f.website.value : "",
+      elapsed: Date.now() - formStart
     };
 
     var btn = $("#submitBtn");

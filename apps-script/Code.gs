@@ -125,6 +125,8 @@ function saveLead_(d) {
   lock.waitLock(10000);
   try {
     if (!d.business || !d.phone) return { ok: false, error: 'Eksik bilgi' };
+    const spam = spamReason_(d);
+    if (spam) { console.warn('Spam teklif engellendi: ' + spam + ' | ' + clean_(d.business, 80)); return { ok: true }; }
     const sh = sheet_(SH.lead);
     sh.appendRow([
       new Date(),
@@ -139,6 +141,21 @@ function saveLead_(d) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Bot gönderimlerini ayıklar; sebep döner, temizse boş döner. */
+function spamReason_(d) {
+  if (String(d.website || '').trim()) return 'gizli alan dolu';
+  const ms = Number(d.elapsed);
+  if (!ms || ms < 4000) return 'çok hızlı / süre yok';
+  let tel = String(d.phone || '').replace(/\D/g, '');
+  if (tel.indexOf('90') === 0 && tel.length === 12) tel = tel.slice(2);
+  if (tel.charAt(0) === '0') tel = tel.slice(1);
+  if (!/^[2-5]\d{9}$/.test(tel)) return 'Türkiye telefonu değil';
+  if (!String(d.items || '').trim() && !String(d.extra || '').trim()) return 'ürün seçilmemiş';
+  const rnd = v => /^[A-Za-z]{12,}$/.test(String(v || '').trim()) && /[a-z][A-Z]/.test(String(v));
+  if (rnd(d.contact) || rnd(d.pain)) return 'anlamsız metin';
+  return '';
 }
 
 function notify_(d) {
